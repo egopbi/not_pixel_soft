@@ -1,6 +1,7 @@
 import asyncio
 import os
 import random
+import pathlib
 
 from telethon.sync import TelegramClient
 from dotenv import load_dotenv
@@ -56,7 +57,6 @@ class Accounts:
 
     def pars_sessions(self):
         sessions = [file.replace(".session", "") for file in os.listdir(self.workdir) if file.endswith(".session")]
-
         logger.info(f"Searched sessions: {len(sessions)}.")
         return sessions
 
@@ -67,9 +67,14 @@ class Accounts:
             
             proxy_dict = parse_proxy(proxy) if proxy else None
 
-            client = TelegramClient(session=session_name, api_id=self.api_id, api_hash=self.api_hash,
-                            proxy=proxy_dict)
-
+            client = TelegramClient(
+                session=pathlib.Path(config.SESSIONS_PATH, session_name), 
+                api_id=self.api_id, 
+                api_hash=self.api_hash,
+                proxy=proxy_dict
+                )
+            print('/////////////////////////////')
+            print(client)
             connect = await asyncio.wait_for(client.connect(), timeout=config.TIMEOUT)
             if connect:
                 await client.get_me()
@@ -90,6 +95,7 @@ class Accounts:
         v_accounts = await asyncio.gather(*tasks)
 
         valid_accounts = [account for account, is_valid in zip(accounts, v_accounts) if is_valid]
+        print('-----------------\n------------\n------------')
         invalid_accounts = [account for account, is_valid in zip(accounts, v_accounts) if not is_valid]
         logger.success(f"Valid accounts: {len(valid_accounts)}; Invalid: {len(invalid_accounts)}")
 
@@ -129,11 +135,8 @@ class Accounts:
 
             dict_proxy = parse_proxy(proxy) if proxy else None
 
-            phone_number = (input("Input the phone number of the account: ")).replace(' ', '')
-            phone_number = '+' + phone_number if not phone_number.startswith('+') else phone_number
-
             client = TelegramClient(
-                session=session_name,
+                session=pathlib.Path(config.SESSIONS_PATH, session_name),
                 api_id=self.api_id,
                 api_hash=self.api_hash,
                 proxy=dict_proxy,
@@ -141,8 +144,9 @@ class Accounts:
 
             async with client:
                 me = await client.get_me()
+            
+            phone_number = '+' + me.phone
 
-            me.phone = phone_number
             save_to_json(f'{ config.WORKDIR}accounts.json', dict_={
                 "session_name": session_name,
                 "phone_number": phone_number,

@@ -1,5 +1,6 @@
 import os
 import asyncio
+import pathlib
 from itertools import zip_longest
 
 from utils.core.telegram import Accounts
@@ -36,7 +37,12 @@ async def main():
 
         for thread, account in enumerate(accounts):
             session_name, phone_number, proxy = account.values()
-            tasks.append(asyncio.create_task(start(session_name=session_name, phone_number=phone_number, thread=thread, proxy=proxy)))
+            tasks.append(asyncio.create_task(start(
+                session_name=pathlib.Path(config.SESSIONS_PATH, session_name), 
+                phone_number=phone_number, 
+                thread=thread, 
+                proxy=proxy
+                )))
 
         await asyncio.gather(*tasks)
 
