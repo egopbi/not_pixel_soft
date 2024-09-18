@@ -73,9 +73,9 @@ class Accounts:
                 api_hash=self.api_hash,
                 proxy=proxy_dict
                 )
-            print('/////////////////////////////')
-            print(client)
-            connect = await asyncio.wait_for(client.connect(), timeout=config.TIMEOUT)
+            
+            await asyncio.wait_for(client.connect(), timeout=config.TIMEOUT)
+            connect = client.is_connected()
             if connect:
                 await client.get_me()
                 await client.disconnect()
@@ -95,7 +95,6 @@ class Accounts:
         v_accounts = await asyncio.gather(*tasks)
 
         valid_accounts = [account for account, is_valid in zip(accounts, v_accounts) if is_valid]
-        print('-----------------\n------------\n------------')
         invalid_accounts = [account for account, is_valid in zip(accounts, v_accounts) if not is_valid]
         logger.success(f"Valid accounts: {len(valid_accounts)}; Invalid: {len(invalid_accounts)}")
 

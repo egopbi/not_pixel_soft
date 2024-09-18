@@ -40,21 +40,21 @@ def retry_async(max_retries=2):
                         break
         return wrapper
     return decorator
+    
 
-
-async def GetWebAppData():
-    with TelegramClient("NotPx_Auto",api_id,api_hash) as client:
-        notcoin = await client.get_entity("notpixel")
-        msg = await client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
-        webappdata_global = msg.url.split('https://notpx.app/#tgWebAppData=')[1].replace("%3D","=").split('&tgWebAppVersion=')[0].replace("%26","&")
-        user_data = webappdata_global.split("&user=")[1].split("&auth")[0]
-        webappdata_global = webappdata_global.replace(user_data,unquote(user_data))
-        return webappdata_global
+def GetWebAppData():
+    client = TelegramClient("NotPx_Auto",api_id,api_hash).start()
+    notcoin = client.get_entity("notpixel")
+    msg = client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
+    webappdata_global = msg.url.split('https://notpx.app/#tgWebAppData=')[1].replace("%3D","=").split('&tgWebAppVersion=')[0].replace("%26","&")
+    user_data = webappdata_global.split("&user=")[1].split("&auth")[0]
+    webappdata_global = webappdata_global.replace(user_data,unquote(user_data))
+    return webappdata_global
 
 
 class NotPx:
     def __init__(self, thread: int, session_name: str, phone_number: str, proxy: [str, None]):
-        self.account = session_name + '.session'
+        self.account = str(session_name) + '.session'
         self.thread = thread
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
         connector = ProxyConnector.from_url(self.proxy) if proxy else aiohttp.TCPConnector(verify_ssl=False)
@@ -85,7 +85,7 @@ class NotPx:
         
         self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=connector, timeout=aiohttp.ClientTimeout(120))
         
-    @retry_async
+
     async def request(self,method,end_point,key_check,data=None):
         try:
             if method == "get":
