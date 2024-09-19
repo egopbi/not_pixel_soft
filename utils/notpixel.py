@@ -60,7 +60,7 @@ class NotPx:
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
         connector = ProxyConnector.from_url(self.proxy) if proxy else aiohttp.TCPConnector(verify_ssl=False)
         self.web_app_query = web_app_query
-
+        self.name = self.account.split("/")[-1]
         if proxy:
             proxy = parse_proxy(proxy)
 
@@ -71,6 +71,7 @@ class NotPx:
             proxy=proxy,
         )
         # web_app_query = get_web_app_data()
+       
         headers = {
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -83,7 +84,7 @@ class NotPx:
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
-            'User-Agent': UserAgent(browsers='chrome', os='linux').random}
+            'User-Agent':UserAgent(os='linux').random}
         print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{headers}\n<<<<<<<<<<>>>>>>>>><<<<<<\n\n\n')
         self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=connector, timeout=aiohttp.ClientTimeout(120))
         
@@ -100,7 +101,9 @@ class NotPx:
                     else:
                         raise Exception(report_bug_text.format(text))
                 else:
+                    logger.error(f"Thread {self.thread} | {self.name} | ConnectionError {end_point}. Try to wait for 1 hour...")
                     raise Exception(authenticate_error)
+                    
             else:
                 response = await self.session.post(f"https://notpx.app/api/v1{end_point}",timeout=5,json=data)
                 if response.status == 200:

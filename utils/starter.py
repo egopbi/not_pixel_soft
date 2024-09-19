@@ -34,8 +34,9 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx):
                     logger.info(f"Thread {thread} | {session_name} | **Painter antidetect:** Sleeping for {t} ...")
                     await asyncio.sleep(t)
             else:
-                logger.info(f"Thread {thread} | {session_name} | **Painter:** No charge avaliable. Sleeping for 20 minutes...")
-                await asyncio.sleep(1200)
+                d = random.randint(900, 2400)
+                logger.info(f"Thread {thread} | {session_name} | **Painter:** No charge avaliable. Sleeping for {d} minutes...")
+                await asyncio.sleep(d)
 
         except aiohttp.ClientConnectionError:
             logger.error(f"Thread {thread} | {session_name} | **Painter:** ConnectionError. Sleeping for 5s...")

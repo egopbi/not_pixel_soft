@@ -34,16 +34,16 @@ async def main():
         accounts = await Accounts().get_accounts()
 
         tasks = []
-
         for thread, account in enumerate(accounts):
             session_name, phone_number, proxy = account.values()
+            print('((((((((((((((((((((((((((()))))))))))))))))))))))))))\n((((((((((((((((((((((()))))))))))))))))))))))')
             tasks.append(asyncio.create_task(start(
                 session_name=session_name, 
                 phone_number=phone_number, 
                 thread=thread, 
                 proxy=proxy
                 )))
-
+            print ('=============\n=======================\n============================\n')
         await asyncio.gather(*tasks)
 
 
