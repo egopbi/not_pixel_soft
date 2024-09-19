@@ -34,18 +34,19 @@ def retry_async(max_retries=2):
                     return await func(*args, **kwargs)
                 except Exception as e:
                     retries += 1
-                    logger.error(f"Thread {thread} | {account} | Error: {e}. Retrying {retries}/{max_retries}...")
+                    logger.error(f"Thread {thread} | {account} | **Error:** {e}. Retrying {retries}/{max_retries}...")
                     await asyncio.sleep(10)
                     if retries >= max_retries:
                         break
         return wrapper
     return decorator
     
+client = TelegramClient("NotPx_Auto",api_id,api_hash).start()
 
-def GetWebAppData():
-    client = TelegramClient("NotPx_Auto",api_id,api_hash).start()
-    notcoin = client.get_entity("notpixel")
-    msg = client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
+async def get_web_app_data():
+    notcoin = await client.get_entity("notpixel")
+    msg = await client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
+    
     webappdata_global = msg.url.split('https://notpx.app/#tgWebAppData=')[1].replace("%3D","=").split('&tgWebAppVersion=')[0].replace("%26","&")
     user_data = webappdata_global.split("&user=")[1].split("&auth")[0]
     webappdata_global = webappdata_global.replace(user_data,unquote(user_data))
@@ -53,11 +54,12 @@ def GetWebAppData():
 
 
 class NotPx:
-    def __init__(self, thread: int, session_name: str, phone_number: str, proxy: [str, None]):
+    def __init__(self, thread: int, session_name: str, phone_number: str, proxy: [str, None], web_app_query: str):
         self.account = str(session_name) + '.session'
         self.thread = thread
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
         connector = ProxyConnector.from_url(self.proxy) if proxy else aiohttp.TCPConnector(verify_ssl=False)
+        self.web_app_query = web_app_query
 
         if proxy:
             proxy = parse_proxy(proxy)
@@ -68,11 +70,11 @@ class NotPx:
             api_hash=os.getenv("API_HASH"),
             proxy=proxy,
         )
-        WebAppQuery = GetWebAppData()
+        # web_app_query = get_web_app_data()
         headers = {
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'Authorization': f'initData {WebAppQuery}',
+            'Authorization': f'initData {self.web_app_query}',
             'Priority': 'u=1, i',
             'Referer': 'https://notpx.app/',
             'Sec-Ch-Ua': 'Chromium;v=119, Not?A_Brand;v=24',
@@ -82,7 +84,7 @@ class NotPx:
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
             'User-Agent': UserAgent(browsers='chrome', os='linux').random}
-        
+        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{headers}\n<<<<<<<<<<>>>>>>>>><<<<<<\n\n\n')
         self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=connector, timeout=aiohttp.ClientTimeout(120))
         
 
@@ -115,16 +117,16 @@ class NotPx:
                     raise Exception(authenticate_error)
         
         except aiohttp.ClientConnectionError:
-            logger.error(f"Thread {self.thread} | {self.account} | Requester: ConnectionError {end_point}. Sleeping for 5s...")
+            logger.error(f"Thread {self.thread} | {self.account} | **Requester:** ConnectionError {end_point}. Sleeping for 5s...")
             asyncio.sleep(5)
 
         except urllib3.exceptions.NewConnectionError:
-            logger.error(f"Thread {self.thread} | {self.account} | Requester: NewConnectionError {end_point}. Sleeping for 5s...")
+            logger.error(f"Thread {self.thread} | {self.account} | **Requester:** NewConnectionError {end_point}. Sleeping for 5s...")
             asyncio.sleep(5)
 
     
     async def claim_mining(self):
-        return await self.request("get","/mining/claim","claimed")['claimed']
+        return (await self.request("get","/mining/claim","claimed"))['claimed']
 
     async def accountStatus(self):
         return await self.request("get","/mining/status","speedPerSecond")
@@ -135,17 +137,17 @@ class NotPx:
         random_pixel = (random.randint(100,990) * 1000) + random.randint(100,990)
         data = {"pixelId":random_pixel,"newColor":random.choice(colors)}
 
-        return await self.request("post","/repaint/start","balance",data)['balance']
+        return (await self.request("post","/repaint/start","balance",data))['balance']
     
     async def paintPixel(self,x,y,hex_color):
         pixelformated = (y * 1000) + x + 1
         data = {"pixelId":pixelformated,"newColor":hex_color}
 
-        return await self.request("post","/repaint/start","balance",data)['balance']
+        return (await self.request("post","/repaint/start","balance",data))['balance']
     
     async def stats(self):
         await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
-        balance = await self.request("get","/repaint/start","balance")['balance']
+        balance = (await self.request("get","/repaint/start","balance"))['balance']
         me = await self.client.get_me()
         phone_number = me.phone
         username = me.username
