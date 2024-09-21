@@ -2,6 +2,7 @@ import random
 import urllib3
 import asyncio
 import os
+import sys
 
 from telethon.sync import TelegramClient,functions
 from urllib.parse import unquote
@@ -14,6 +15,7 @@ from utils.core import logger
 from utils.core.telegram import parse_proxy
 import config
 
+sys.path.append('/Users/egorpopov/softs/not_pixel_my/utils') 
 
 
 load_dotenv()
@@ -41,9 +43,10 @@ def retry_async(max_retries=2):
         return wrapper
     return decorator
     
-client = TelegramClient("NotPx_Auto",api_id,api_hash).start()
+# client = TelegramClient("NotPx_Auto",api_id,api_hash).start() #Скорее всего, дело здесь
 
 async def get_web_app_data():
+    client = await TelegramClient("NotPx_Auto",api_id,api_hash).start()
     notcoin = await client.get_entity("notpixel")
     msg = await client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
     
@@ -85,8 +88,9 @@ class NotPx:
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
             'User-Agent':UserAgent(os='linux').random}
-        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{headers}\n<<<<<<<<<<>>>>>>>>><<<<<<\n\n\n')
+        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{headers}\n<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n\n')
         self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=connector, timeout=aiohttp.ClientTimeout(120))
+        print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{self.session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
         
 
     async def request(self,method,end_point,key_check,data=None):
@@ -113,7 +117,7 @@ class NotPx:
                         return json_response
                     else:
                         raise Exception(report_bug_text.format(text))
-                elif response.status_code >= 500:
+                elif response.status >= 500:
                     await asyncio.sleep(5)
                     return await self.request(method,end_point,key_check,data)
                 else:
@@ -129,10 +133,15 @@ class NotPx:
 
     
     async def claim_mining(self):
-        return (await self.request("get","/mining/claim","claimed"))['claimed']
+        try:
+            claimed_count = (await self.request("get","/mining/claim","claimed"))['claimed']
+            return claimed_count
+        except:
+            return None
+    
 
     async def accountStatus(self):
-        return await self.request("get","/mining/status","speedPerSecond")
+        return await self.request("get","/mining/status","speedPerSecond") # во всех сессиях выдает одно и то же значение
 
     async def autoPaintPixel(self):
         # making pixel randomly
@@ -140,6 +149,7 @@ class NotPx:
         random_pixel = (random.randint(100,990) * 1000) + random.randint(100,990)
         data = {"pixelId":random_pixel,"newColor":random.choice(colors)}
 
+        # Почему-то для разных сессий выдает одно значение 
         return (await self.request("post","/repaint/start","balance",data))['balance']
     
     async def paintPixel(self,x,y,hex_color):

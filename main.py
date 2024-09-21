@@ -34,16 +34,17 @@ async def main():
         accounts = await Accounts().get_accounts()
 
         tasks = []
+    
+        # Почему-то все запросы идут на один акк
         for thread, account in enumerate(accounts):
             session_name, phone_number, proxy = account.values()
-            print('((((((((((((((((((((((((((()))))))))))))))))))))))))))\n((((((((((((((((((((((()))))))))))))))))))))))')
+            print(f'\n(((((((({thread})))))))))\n==================\n{account}\n=======================)')
             tasks.append(asyncio.create_task(start(
                 session_name=session_name, 
                 phone_number=phone_number, 
                 thread=thread, 
                 proxy=proxy
                 )))
-            print ('=============\n=======================\n============================\n')
         await asyncio.gather(*tasks)
 
 

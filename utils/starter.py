@@ -8,6 +8,7 @@ import aiohttp
 import pathlib
 
 import config
+
 from utils.core.telegram import Accounts
 from utils.core import logger
 from utils.notpixel import NotPx, get_web_app_data
@@ -15,10 +16,11 @@ from utils.notpixel import NotPx, get_web_app_data
 
 async def autopainter(thread: int, session_name: str, NotPxClient: NotPx):
     logger.info(f"Thread {thread} | {session_name} | **Painter:** Auto painting started!")
-
+    print(f'@@@@@@@@@@@@@@@@@@@@@@@@@@@\n{NotPxClient}\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
     while True:
         try:
-            charges = await NotPxClient.accountStatus()
+            charges = await NotPxClient.accountStatus() #ошибка в этой функции
+            print(f'!!!!!!!!!!!!!!!!!!!\n\n{charges}\n\n!!!!!!!!!!!!!!!!!!!!!!')
             if not charges:
                 await asyncio.sleep(5)
                 continue
@@ -27,7 +29,7 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx):
 
             if charges > 0:
                 for _ in range(charges):
-                    balance = await NotPxClient.autoPaintPixel()
+                    balance = await NotPxClient.autoPaintPixel() #ошибка в этой функции
                     logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel painted successfully! User new balance: {balance}")
 
                     t = random.randint(1,6)
@@ -55,8 +57,13 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx):
         speed_per_second = acc_data['speedPerSecond']
         
         if from_start * speed_per_second > 2:
-            claimed_count = round(await NotPxClient.claim_mining(),2)
-            logger.success(f"Thread {thread} | {session_name} | **Miner:** {claimed_count} NotPx token was claimed.")
+            claimed_count = await NotPxClient.claim_mining()
+            if claimed_count is None:
+                logger.info(f"Thread {thread} | {session_name} | **Miner:** Error request. Sleeping for 1 hour...")
+                await asyncio.sleep(3600)
+            else:
+                claimed_count = round(claimed_count,2)
+                logger.success(f"Thread {thread} | {session_name} | **Miner:** {claimed_count} NotPx token was claimed.")
         sleep_time = random.randint(3600,15000)
         logger.info(f"Thread {thread} | {session_name} | **Miner:** Sleeping for {sleep_time} seconds...")
         await asyncio.sleep(sleep_time)
@@ -64,10 +71,19 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx):
 
 async def start(thread: int, session_name: str, phone_number: str, proxy: [str, None]):
     web_app_query = await get_web_app_data()
-    NotPxClient = NotPx(thread=thread, session_name=pathlib.Path(config.SESSIONS_PATH, session_name), phone_number=phone_number, proxy=proxy, web_app_query=web_app_query)
+    print(f'\n\n********************\n{thread}\n{session_name}\n{phone_number}\n{proxy}\n{web_app_query}\n**********************')
+    # NotPxClient разные
+    NotPxClient = NotPx(
+        thread=thread,
+        session_name=pathlib.Path(config.SESSIONS_PATH, session_name),
+        phone_number=phone_number,
+        proxy=proxy,
+        web_app_query=web_app_query
+        )
+    # Даже при удалении основной сессии все равно идут на нее запросы
     session_name = session_name + '.session'
     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
-
+    print('\n////////////////////////////\n', session_name, '\n/////////////////////////////\n')
     await asyncio.gather(
     autopainter(thread=thread, session_name=session_name, NotPxClient=NotPxClient),
     mine_claimer(thread=thread, session_name=session_name, NotPxClient=NotPxClient)
