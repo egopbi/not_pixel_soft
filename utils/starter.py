@@ -33,11 +33,11 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx):
                     logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel painted successfully! User new balance: {balance}")
 
                     t = random.randint(1,6)
-                    logger.info(f"Thread {thread} | {session_name} | **Painter antidetect:** Sleeping for {t} ...")
+                    logger.info(f"Thread {thread} | {session_name} | **Painter antidetect:** Sleeping for {t} seconds...")
                     await asyncio.sleep(t)
             else:
                 d = random.randint(900, 2400)
-                logger.info(f"Thread {thread} | {session_name} | **Painter:** No charge avaliable. Sleeping for {d} minutes...")
+                logger.info(f"Thread {thread} | {session_name} | **Painter:** No charge avaliable. Sleeping for {d} seconds...")
                 await asyncio.sleep(d)
 
         except aiohttp.ClientConnectionError:
@@ -69,17 +69,16 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx):
         await asyncio.sleep(sleep_time)
 
 
-async def start(thread: int, session_name: str, phone_number: str, proxy: [str, None]):
-    web_app_query = await get_web_app_data()
-    print(f'\n\n********************\n{thread}\n{session_name}\n{phone_number}\n{proxy}\n{web_app_query}\n**********************')
+async def start(thread: int, session_name: str, phone_number: str, proxy: [str, None], web_app_query: str):
     # NotPxClient разные
     NotPxClient = NotPx(
         thread=thread,
         session_name=pathlib.Path(config.SESSIONS_PATH, session_name),
         phone_number=phone_number,
         proxy=proxy,
-        web_app_query=web_app_query
+        web_app_query=web_app_query,
         )
+    print(f'\n\n********************\n{thread}\n{session_name}\n{phone_number}\n{proxy}\n{NotPxClient.web_app_query}\n**********************')
     # Даже при удалении основной сессии все равно идут на нее запросы
     session_name = session_name + '.session'
     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
@@ -90,10 +89,11 @@ async def start(thread: int, session_name: str, phone_number: str, proxy: [str, 
     )
 
            
-
+# ФУнкция не готова, не трогал изменения с webappquery
+"""
 async def stats():
     accounts = await Accounts().get_accounts()
-    web_app_query = await get_web_app_data()
+    # web_app_query = await get_web_app_data()
     tasks = []
     for thread, account in enumerate(accounts):
         session_name, phone_number, proxy = account.values()
@@ -102,7 +102,7 @@ async def stats():
             phone_number=phone_number, 
             thread=thread, 
             proxy=proxy,
-            web_app_query=web_app_query
+            web_app_query=web_app_query,
             ).stats()))
 
     data = await asyncio.gather(*tasks)
@@ -115,3 +115,4 @@ async def stats():
     df.to_csv(path, index=False, encoding='utf-8-sig')
 
     logger.success(f"Saved statistics to {path}")
+"""

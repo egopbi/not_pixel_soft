@@ -45,15 +45,16 @@ def retry_async(max_retries=2):
     
 # client = TelegramClient("NotPx_Auto",api_id,api_hash).start() #Скорее всего, дело здесь
 
-async def get_web_app_data():
-    client = await TelegramClient("NotPx_Auto",api_id,api_hash).start()
-    notcoin = await client.get_entity("notpixel")
-    msg = await client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
-    
-    webappdata_global = msg.url.split('https://notpx.app/#tgWebAppData=')[1].replace("%3D","=").split('&tgWebAppVersion=')[0].replace("%26","&")
-    user_data = webappdata_global.split("&user=")[1].split("&auth")[0]
-    webappdata_global = webappdata_global.replace(user_data,unquote(user_data))
-    return webappdata_global
+async def get_web_app_data(lock):
+    async with lock:
+        client = await TelegramClient("NotPx_Auto",api_id,api_hash).start()
+        notcoin = await client.get_entity("notpixel")
+        msg = await client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
+        
+        webappdata_global = msg.url.split('https://notpx.app/#tgWebAppData=')[1].replace("%3D","=").split('&tgWebAppVersion=')[0].replace("%26","&")
+        user_data = webappdata_global.split("&user=")[1].split("&auth")[0]
+        webappdata_global = webappdata_global.replace(user_data,unquote(user_data))
+        return webappdata_global
 
 
 class NotPx:
@@ -62,7 +63,6 @@ class NotPx:
         self.thread = thread
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
         connector = ProxyConnector.from_url(self.proxy) if proxy else aiohttp.TCPConnector(verify_ssl=False)
-        self.web_app_query = web_app_query
         self.name = self.account.split("/")[-1]
         if proxy:
             proxy = parse_proxy(proxy)
@@ -73,8 +73,9 @@ class NotPx:
             api_hash=os.getenv("API_HASH"),
             proxy=proxy,
         )
-        # web_app_query = get_web_app_data()
-       
+
+        self.web_app_query = web_app_query
+        
         headers = {
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',

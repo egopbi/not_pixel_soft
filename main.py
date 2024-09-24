@@ -4,8 +4,9 @@ import pathlib
 from itertools import zip_longest
 
 from utils.core.telegram import Accounts
-from utils.starter import start, stats
+from utils.starter import start # , stats
 from utils.core import get_all_lines
+from utils.notpixel import get_web_app_data
 import config
 
 
@@ -27,24 +28,29 @@ async def main():
     if action == 3:
         await Accounts().create_sessions()
 
-    if action == 2:
-        await stats()
+    # if action == 2:
+    #     await stats()
 
     if action == 1:
         accounts = await Accounts().get_accounts()
 
         tasks = []
+        tg_sessions = {}
     
         # Почему-то все запросы идут на один акк
         for thread, account in enumerate(accounts):
             session_name, phone_number, proxy = account.values()
-            print(f'\n(((((((({thread})))))))))\n==================\n{account}\n=======================)')
+            print(f'\n(((((((({thread})))))))))\n==================\n{account}\n=======================')
+            async  with asyncio.Lock() as lock:
+                tg_sessions[session_name] = get_web_app_data(lock) 
             tasks.append(asyncio.create_task(start(
                 session_name=session_name, 
                 phone_number=phone_number, 
                 thread=thread, 
-                proxy=proxy
+                proxy=proxy,
+                web_app_query=tg_sessions[session_name],
                 )))
+        print(tg_sessions)
         await asyncio.gather(*tasks)
 
 
