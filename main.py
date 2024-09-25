@@ -3,14 +3,19 @@ import asyncio
 import pathlib
 from itertools import zip_longest
 
+from telethon.sync import TelegramClient
+
 from utils.core.telegram import Accounts
 from utils.starter import start # , stats
 from utils.core import get_all_lines
 from utils.notpixel import get_web_app_data
 import config
 
+api_id = os.getenv("API_ID")
+api_hash = os.getenv("API_HASH")
 
 async def main():
+    # lock = asyncio.Lock() 
     print("Soft's author: EGORKA Ebana v rot")
     action = int(input("Select action:\n1. Start soft\n2. Get statistics\n3. Create sessions\n\n> "))
 
@@ -37,12 +42,13 @@ async def main():
         tasks = []
         tg_sessions = {}
     
-        # Почему-то все запросы идут на один акк
         for thread, account in enumerate(accounts):
             session_name, phone_number, proxy = account.values()
             print(f'\n(((((((({thread})))))))))\n==================\n{account}\n=======================')
-            async  with asyncio.Lock() as lock:
-                tg_sessions[session_name] = get_web_app_data(lock) 
+            client = await TelegramClient("NotPx_Auto",api_id,api_hash).start()
+            # async with lock:
+            #     tg_sessions[session_name] = await get_web_app_data(lock) 
+            tg_sessions[session_name] = await get_web_app_data(client)
             tasks.append(asyncio.create_task(start(
                 session_name=session_name, 
                 phone_number=phone_number, 
@@ -50,7 +56,7 @@ async def main():
                 proxy=proxy,
                 web_app_query=tg_sessions[session_name],
                 )))
-        print(tg_sessions)
+        # print(f'\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n{tg_sessions}\n^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
         await asyncio.gather(*tasks)
 
 

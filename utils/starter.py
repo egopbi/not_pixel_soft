@@ -19,13 +19,16 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx):
     print(f'@@@@@@@@@@@@@@@@@@@@@@@@@@@\n{NotPxClient}\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
     while True:
         try:
-            charges = await NotPxClient.accountStatus() #ошибка в этой функции
-            print(f'!!!!!!!!!!!!!!!!!!!\n\n{charges}\n\n!!!!!!!!!!!!!!!!!!!!!!')
-            if not charges:
+            NotPxClient.reconnect()
+            # print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\nAutopainter session is: {NotPxClient.session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%')
+            await asyncio.sleep(random.randint(2, 4))
+            acc_data = await NotPxClient.accountStatus() #ошибка в этой функции
+            print(f'!!!!!!!!!!!!!!!!!!!\n\nAutopainter account data: {acc_data}\n\n!!!!!!!!!!!!!!!!!!!!!!')
+            if not acc_data:
                 await asyncio.sleep(5)
                 continue
             else:
-                charges = charges['charges']
+                charges = acc_data['charges']
 
             if charges > 0:
                 for _ in range(charges):
@@ -36,7 +39,7 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx):
                     logger.info(f"Thread {thread} | {session_name} | **Painter antidetect:** Sleeping for {t} seconds...")
                     await asyncio.sleep(t)
             else:
-                d = random.randint(900, 2400)
+                d = random.randint(900, 3400)
                 logger.info(f"Thread {thread} | {session_name} | **Painter:** No charge avaliable. Sleeping for {d} seconds...")
                 await asyncio.sleep(d)
 
@@ -52,7 +55,11 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx):
     logger.info(f"Thread {thread} | {session_name} | **Miner:** Mine claiming started!") 
     
     while True:
+        NotPxClient.reconnect()
+        # print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\nMineclaimer session is: {NotPxClient.session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%')
+        await asyncio.sleep(random.randint(2, 4))
         acc_data = await NotPxClient.accountStatus()
+        print(f'!!!!!!!!!!!!!!!!!!!\n\nMineclaimer account data: {acc_data}\n\n!!!!!!!!!!!!!!!!!!!!!!')
         from_start = acc_data['fromStart']
         speed_per_second = acc_data['speedPerSecond']
         
@@ -70,7 +77,6 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx):
 
 
 async def start(thread: int, session_name: str, phone_number: str, proxy: [str, None], web_app_query: str):
-    # NotPxClient разные
     NotPxClient = NotPx(
         thread=thread,
         session_name=pathlib.Path(config.SESSIONS_PATH, session_name),
@@ -79,10 +85,8 @@ async def start(thread: int, session_name: str, phone_number: str, proxy: [str, 
         web_app_query=web_app_query,
         )
     print(f'\n\n********************\n{thread}\n{session_name}\n{phone_number}\n{proxy}\n{NotPxClient.web_app_query}\n**********************')
-    # Даже при удалении основной сессии все равно идут на нее запросы
     session_name = session_name + '.session'
     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
-    print('\n////////////////////////////\n', session_name, '\n/////////////////////////////\n')
     await asyncio.gather(
     autopainter(thread=thread, session_name=session_name, NotPxClient=NotPxClient),
     mine_claimer(thread=thread, session_name=session_name, NotPxClient=NotPxClient)

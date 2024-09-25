@@ -45,9 +45,8 @@ def retry_async(max_retries=2):
     
 # client = TelegramClient("NotPx_Auto",api_id,api_hash).start() #Скорее всего, дело здесь
 
-async def get_web_app_data(lock):
-    async with lock:
-        client = await TelegramClient("NotPx_Auto",api_id,api_hash).start()
+async def get_web_app_data(client): # lock):
+    # async with lock:
         notcoin = await client.get_entity("notpixel")
         msg = await client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
         
@@ -62,21 +61,21 @@ class NotPx:
         self.account = str(session_name) + '.session'
         self.thread = thread
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
-        connector = ProxyConnector.from_url(self.proxy) if proxy else aiohttp.TCPConnector(verify_ssl=False)
+        self.connector = ProxyConnector.from_url(self.proxy) if proxy else aiohttp.TCPConnector(verify_ssl=False)
         self.name = self.account.split("/")[-1]
         if proxy:
             proxy = parse_proxy(proxy)
 
-        self.client = TelegramClient(
-            session=session_name,
-            api_id=os.getenv("API_ID"),
-            api_hash=os.getenv("API_HASH"),
-            proxy=proxy,
-        )
+        # self.client = TelegramClient(
+        #     session=session_name,
+        #     api_id=os.getenv("API_ID"),
+        #     api_hash=os.getenv("API_HASH"),
+        #     proxy=proxy,
+        # )
 
         self.web_app_query = web_app_query
         
-        headers = {
+        self.session_headers = {
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.9',
             'Authorization': f'initData {self.web_app_query}',
@@ -89,9 +88,9 @@ class NotPx:
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
             'User-Agent':UserAgent(os='linux').random}
-        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{headers}\n<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n\n')
-        self.session = aiohttp.ClientSession(headers=headers, trust_env=True, connector=connector, timeout=aiohttp.ClientTimeout(120))
-        print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{self.session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
+        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\nSession headers: {self.session_headers}\n<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n\n')
+        self.session = aiohttp.ClientSession(headers=self.session_headers, trust_env=True, connector=self.connector, timeout=aiohttp.ClientTimeout(120))
+        print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\nSession is: {self.session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
         
 
     async def request(self,method,end_point,key_check,data=None):
@@ -107,7 +106,9 @@ class NotPx:
                         raise Exception(report_bug_text.format(text))
                 else:
                     logger.error(f"Thread {self.thread} | {self.name} | ConnectionError {end_point}. Try to wait for 1 hour...")
+                    await self.logout()
                     raise Exception(authenticate_error)
+                    
                     
             else:
                 response = await self.session.post(f"https://notpx.app/api/v1{end_point}",timeout=5,json=data)
@@ -122,6 +123,8 @@ class NotPx:
                     await asyncio.sleep(5)
                     return await self.request(method,end_point,key_check,data)
                 else:
+                    await self.session.close()
+                    await self.connector.close()
                     raise Exception(authenticate_error)
         
         except aiohttp.ClientConnectionError:
@@ -132,14 +135,20 @@ class NotPx:
             logger.error(f"Thread {self.thread} | {self.account} | **Requester:** NewConnectionError {end_point}. Sleeping for 5s...")
             asyncio.sleep(5)
 
-    
+    async def logout(self):
+        await self.session.close()
+        await self.connector.close()
+
+    def reconnect(self):
+        self.session.close()
+        self.session = aiohttp.ClientSession(headers=self.session_headers, trust_env=True, connector=self.connector, timeout=aiohttp.ClientTimeout(120))
+
     async def claim_mining(self):
         try:
             claimed_count = (await self.request("get","/mining/claim","claimed"))['claimed']
             return claimed_count
         except:
             return None
-    
 
     async def accountStatus(self):
         return await self.request("get","/mining/status","speedPerSecond") # во всех сессиях выдает одно и то же значение
@@ -159,11 +168,11 @@ class NotPx:
 
         return (await self.request("post","/repaint/start","balance",data))['balance']
     
-    async def stats(self):
-        await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
-        balance = (await self.request("get","/repaint/start","balance"))['balance']
-        me = await self.client.get_me()
-        phone_number = me.phone
-        username = me.username
-        proxy = self.proxy.replace('http://', "") if self.proxy is not None else '-'
-        return [phone_number, username, balance, self.account, self.thread, proxy]
+    # async def stats(self): # Недописано
+    #     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
+    #     balance = (await self.request("get","/repaint/start","balance"))['balance']
+    #     me = await self.client.get_me()
+    #     phone_number = me.phone
+    #     username = me.username
+    #     proxy = self.proxy.replace('http://', "") if self.proxy is not None else '-'
+    #     return [phone_number, username, balance, self.account, self.thread, proxy]
