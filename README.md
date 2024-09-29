@@ -1,4 +1,4 @@
-#HOW TO USE
+# HOW TO USE
 
 0. ```git clone git@github.com:egopbi/not_pixel_soft.git```
 1. ```direnv allow``` 
