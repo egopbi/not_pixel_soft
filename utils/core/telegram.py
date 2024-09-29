@@ -151,4 +151,4 @@ class Accounts:
                 "phone_number": phone_number,
                 "proxy": proxy
             })
-            logger.success(f'Added an account {me.username} ({me.first_name}) | {me.phone}')
+            logger.success(f'Added an account {me.username} ({me.first_name}) | +{me.phone}')

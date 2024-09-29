@@ -26,26 +26,8 @@ api_hash = os.getenv("API_HASH")
 report_bug_text = "If you have done all the steps correctly and you think this is a bug, report it to github.com/aDarkDev with response. response: {}"
 authenticate_error = "Please follow the steps correctly. Not authenticated."
 
-def retry_async(max_retries=2):
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            thread, account = args[0].thread, args[0].account
-            retries = 0
-            while retries < max_retries:
-                try:
-                    return await func(*args, **kwargs)
-                except Exception as e:
-                    retries += 1
-                    logger.error(f"Thread {thread} | {account} | **Error:** {e}. Retrying {retries}/{max_retries}...")
-                    await asyncio.sleep(10)
-                    if retries >= max_retries:
-                        break
-        return wrapper
-    return decorator
-    
-# client = TelegramClient("NotPx_Auto",api_id,api_hash).start() #Скорее всего, дело здесь
 
-async def get_web_app_data(client): # lock):
+async def get_web_app_data(client: TelegramClient): # lock):
     # async with lock:
         notcoin = await client.get_entity("notpixel")
         msg = await client(functions.messages.RequestWebViewRequest(notcoin,notcoin,platform="android",url="https://notpx.app/"))
@@ -61,7 +43,6 @@ class NotPx:
         self.account = str(session_name) + '.session'
         self.thread = thread
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
-        self.connector = ProxyConnector.from_url(self.proxy) if proxy else aiohttp.TCPConnector(verify_ssl=False)
         self.name = self.account.split("/")[-1]
         if proxy:
             proxy = parse_proxy(proxy)
@@ -88,85 +69,90 @@ class NotPx:
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
             'User-Agent':UserAgent(os='linux').random}
-        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\nSession headers: {self.session_headers}\n<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n\n')
-        self.session = aiohttp.ClientSession(headers=self.session_headers, trust_env=True, connector=self.connector, timeout=aiohttp.ClientTimeout(120))
-        print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\nSession is: {self.session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
+        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{session_name}\nSession headers: {self.session_headers}\n<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n\n')
         
-
-    async def request(self,method,end_point,key_check,data=None):
-        try:
-            if method == "get":
-                response = await self.session.get(f"https://notpx.app/api/v1{end_point}",timeout=5)
-                if response.status == 200:
-                    text = await response.text()
-                    if key_check in text:
-                        json_response = await response.json()
-                        return json_response
+    async def request(self, method, end_point, key_check, aiohttp_session: aiohttp.ClientSession, data=None, attempt=3):
+        if attempt > 0:    
+            try:
+                if method == "get":
+                    response = await aiohttp_session.get(f"https://notpx.app/api/v1{end_point}",timeout=5)
+                    if response.status == 200:
+                        text = await response.text()
+                        if key_check in text:
+                            json_response = await response.json()
+                            return json_response
+                        else:
+                            raise Exception(report_bug_text.format(text))
                     else:
-                        raise Exception(report_bug_text.format(text))
+                        logger.error(f"Thread {self.thread} | {self.name} | ConnectionError {end_point}. Try to wait for 1 hour...")
+                        raise Exception(authenticate_error)
+                            
+                            
                 else:
-                    logger.error(f"Thread {self.thread} | {self.name} | ConnectionError {end_point}. Try to wait for 1 hour...")
-                    await self.logout()
-                    raise Exception(authenticate_error)
-                    
-                    
-            else:
-                response = await self.session.post(f"https://notpx.app/api/v1{end_point}",timeout=5,json=data)
-                if response.status == 200:
-                    text = await response.text()
-                    if key_check in text:
-                        json_response = await response.json()
-                        return json_response
+                    response = await aiohttp_session.post(f"https://notpx.app/api/v1{end_point}",timeout=5,json=data)
+                    if response.status == 200:
+                        text = await response.text()
+                        if key_check in text:
+                            json_response = await response.json()
+                            return json_response
+                        else:
+                            raise Exception(report_bug_text.format(text))
+                    elif response.status >= 500:
+                        await asyncio.sleep(5)
+                        return await self.request(method,end_point,key_check,data)
                     else:
-                        raise Exception(report_bug_text.format(text))
-                elif response.status >= 500:
-                    await asyncio.sleep(5)
-                    return await self.request(method,end_point,key_check,data)
-                else:
-                    await self.session.close()
-                    await self.connector.close()
-                    raise Exception(authenticate_error)
-        
-        except aiohttp.ClientConnectionError:
-            logger.error(f"Thread {self.thread} | {self.account} | **Requester:** ConnectionError {end_point}. Sleeping for 5s...")
-            asyncio.sleep(5)
+                        raise Exception(authenticate_error)
+                
+            except aiohttp.ClientConnectionError:
+                logger.error(f"Thread {self.thread} | {self.account} | **Requester:** ConnectionError {end_point}. Sleeping for 5s...")
+                attempt -= 1
+                await asyncio.sleep(5)
+                return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
 
-        except urllib3.exceptions.NewConnectionError:
-            logger.error(f"Thread {self.thread} | {self.account} | **Requester:** NewConnectionError {end_point}. Sleeping for 5s...")
-            asyncio.sleep(5)
+            except urllib3.exceptions.NewConnectionError:
+                logger.error(f"Thread {self.thread} | {self.account} | **Requester:** NewConnectionError {end_point}. Sleeping for 5s...")
+                attempt -= 1
+                await asyncio.sleep(5)
+                return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
+            
+            except asyncio.TimeoutError:
+                logger.error(f"Thread {self.thread} | {self.account} | **Requester:** TimeoutError {end_point}. Retrying in 5s...")
+                attempt -= 1
+                await asyncio.sleep(5)
+                return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
+        else:
+            logger.error(f"Thread {self.thread} | {self.account} | **Requester:** Too many tries for request")
+            return None
 
-    async def logout(self):
-        await self.session.close()
-        await self.connector.close()
 
-    def reconnect(self):
-        self.session.close()
-        self.session = aiohttp.ClientSession(headers=self.session_headers, trust_env=True, connector=self.connector, timeout=aiohttp.ClientTimeout(120))
-
-    async def claim_mining(self):
+    async def claim_mining(self, aiohttp_session):
         try:
-            claimed_count = (await self.request("get","/mining/claim","claimed"))['claimed']
+            claimed_count = (await self.request("get","/mining/claim","claimed", aiohttp_session))['claimed']
             return claimed_count
         except:
             return None
 
-    async def accountStatus(self):
-        return await self.request("get","/mining/status","speedPerSecond") # во всех сессиях выдает одно и то же значение
+    async def accountStatus(self, aiohttp_session):
+        return await self.request("get","/mining/status","speedPerSecond", aiohttp_session) # во всех сессиях выдает одно и то же значение
 
-    async def autoPaintPixel(self):
+    async def autoPaintPixel(self, aiohttp_session):
         # making pixel randomly
         colors = [ "#FFFFFF" , "#000000" , "#00CC78" , "#BE0039" ]
         random_pixel = (random.randint(100,990) * 1000) + random.randint(100,990)
         data = {"pixelId":random_pixel,"newColor":random.choice(colors)}
 
         # Почему-то для разных сессий выдает одно значение 
-        return (await self.request("post","/repaint/start","balance",data))['balance']
+        return (await self.request("post","/repaint/start","balance", aiohttp_session, data))['balance']
     
-    async def paintPixel(self,x,y,hex_color):
+    async def paintPixel(self,x,y,hex_color, aiohttp_session):
         pixelformated = (y * 1000) + x + 1
         data = {"pixelId":pixelformated,"newColor":hex_color}
 
-        return (await self.request("post","/repaint/start","balance",data))['balance']
+        return (await self.request("post","/repaint/start","balance",aiohttp_session, data))['balance']
+    
+    async def update_headers(self, client):
+        new_web_app_query = await get_web_app_data(client)
+        self.session_headers['Authorization'] = f'initData {new_web_app_query}'
     
     # async def stats(self): # Недописано
     #     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))

@@ -7,16 +7,15 @@ from telethon.sync import TelegramClient
 
 from utils.core.telegram import Accounts
 from utils.starter import start # , stats
-from utils.core import get_all_lines
+from utils.core import logger, load_from_json
 from utils.notpixel import get_web_app_data
 import config
 
-api_id = os.getenv("API_ID")
-api_hash = os.getenv("API_HASH")
+# api_id = os.getenv("API_ID_morenocesar")
+# api_hash = os.getenv("API_HASH_morenocesar")
 
 async def main():
-    # lock = asyncio.Lock() 
-    print("Soft's author: EGORKA Ebana v rot")
+    print("Soft's author: Eeee Gorka Ebana v rot")
     action = int(input("Select action:\n1. Start soft\n2. Get statistics\n3. Create sessions\n\n> "))
 
     if not os.path.exists('sessions'): os.mkdir('sessions')
@@ -37,6 +36,23 @@ async def main():
     #     await stats()
 
     if action == 1:
+        # Downloads API's for every account
+        try:
+            accounts_from_json = load_from_json('sessions/accounts.json')
+            api_dict = {}
+
+            for account in accounts_from_json:
+                session_name = account['session_name']
+                api_id_name = "API_ID_" + str(session_name)
+                api_hash_name = "API_HASH_" + str(session_name)
+                api_id = os.getenv(api_id_name)
+                api_hash = os.getenv(api_hash_name)
+                api_dict[session_name] = (api_id, api_hash)
+        except:
+            logger.error("YOU HAVE NO SESSION ACCOUNTS YET")
+        
+        logger.info(f"Your api dict is\n{api_dict}")
+        
         accounts = await Accounts().get_accounts()
 
         tasks = []
@@ -45,7 +61,10 @@ async def main():
         for thread, account in enumerate(accounts):
             session_name, phone_number, proxy = account.values()
             print(f'\n(((((((({thread})))))))))\n==================\n{account}\n=======================')
-            client = await TelegramClient("NotPx_Auto",api_id,api_hash).start()
+            # async with lock:
+            print(f'\n\n\n========== BEFORE TELEGRAMCLIENT.START {session_name} ==========\n\n\n')
+            # client = await TelegramClient(f"NotPx_Auto_{session_name}",api_dict[session_name][0], api_dict[session_name][1]).start()
+            client = await TelegramClient(f"NotPx_Auto_{session_name}",api_id, api_hash).start()
             # async with lock:
             #     tg_sessions[session_name] = await get_web_app_data(lock) 
             tg_sessions[session_name] = await get_web_app_data(client)
@@ -55,6 +74,7 @@ async def main():
                 thread=thread, 
                 proxy=proxy,
                 web_app_query=tg_sessions[session_name],
+                client=client
                 )))
         # print(f'\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n{tg_sessions}\n^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
         await asyncio.gather(*tasks)
