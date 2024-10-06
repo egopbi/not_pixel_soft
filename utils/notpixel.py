@@ -8,11 +8,9 @@ from telethon.sync import TelegramClient,functions
 from urllib.parse import unquote
 import aiohttp
 from fake_useragent import UserAgent
-from aiohttp_socks import ProxyConnector
 from dotenv import load_dotenv
 
 from utils.core import logger
-from utils.core.telegram import parse_proxy
 import config
 
 sys.path.append('/Users/egorpopov/softs/not_pixel_my/utils') 
@@ -39,14 +37,12 @@ async def get_web_app_data(client: TelegramClient): # lock):
 
 
 class NotPx:
-    def __init__(self, thread: int, session_name: str, phone_number: str, proxy: [str, None], web_app_query: str):
+    def __init__(self, thread: int, session_name: str, phone_number: str, proxy: dict, web_app_query: str):
         self.account = str(session_name) + '.session'
         self.thread = thread
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
         self.name = self.account.split("/")[-1]
-        if proxy:
-            proxy = parse_proxy(proxy)
-
+        
         # self.client = TelegramClient(
         #     session=session_name,
         #     api_id=os.getenv("API_ID"),
@@ -69,9 +65,9 @@ class NotPx:
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
             'User-Agent':UserAgent(os='linux').random}
-        print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{session_name}\nSession headers: {self.session_headers}\n<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n\n')
+        # print(f'\n\n\n>>>>>>>>>>>>>>>>>>>>>\n{session_name}\nSession headers: {self.session_headers}\n<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n\n')
         
-    async def request(self, method, end_point, key_check, aiohttp_session: aiohttp.ClientSession, data=None, attempt=3):
+    async def request(self, method, end_point, key_check, aiohttp_session: aiohttp.ClientSession, data=None, attempt=4):
         if attempt > 0:    
             try:
                 if method == "get":
@@ -116,9 +112,9 @@ class NotPx:
                 return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
             
             except asyncio.TimeoutError:
-                logger.error(f"Thread {self.thread} | {self.account} | **Requester:** TimeoutError {end_point}. Retrying in 5s...")
+                logger.error(f"Thread {self.thread} | {self.account} | **Requester:** TimeoutError {end_point}. Retrying in 7s...")
                 attempt -= 1
-                await asyncio.sleep(5)
+                await asyncio.sleep(7)
                 return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
         else:
             logger.error(f"Thread {self.thread} | {self.account} | **Requester:** Too many tries for request")
@@ -151,7 +147,9 @@ class NotPx:
         return (await self.request("post","/repaint/start","balance",aiohttp_session, data))['balance']
     
     async def update_headers(self, client):
+        # print('\n±±±±±±±±±±±±±±±±±±\nupdate headers starts\n±±±±±±±±±±±±±±±±±±±±±±\n')
         new_web_app_query = await get_web_app_data(client)
+        # print('\n§§§§§§§§§§§§§§§§§§\nget new web app query\n§§§§§§§§§§§§§§§§§§§§§')
         self.session_headers['Authorization'] = f'initData {new_web_app_query}'
     
     # async def stats(self): # Недописано

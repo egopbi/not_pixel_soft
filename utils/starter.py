@@ -1,5 +1,4 @@
 import random 
-import datetime
 import asyncio
 import urllib3
 import pandas as pd
@@ -12,14 +11,16 @@ from telethon.sync import TelegramClient
 import config
 from utils.core.telegram import Accounts
 from utils.core import logger
-from utils.notpixel import NotPx, get_web_app_data
+from utils.notpixel import NotPx
 
 
 async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client: TelegramClient):
+    await asyncio.sleep(random.randint(1,5))
     logger.info(f"Thread {thread} | {session_name} | **Painter:** Auto painting started!")
     # print(f'@@@@@@@@@@@@@@@@@@@@@@@@@@@\n{NotPxClient}\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
     while True:
         await NotPxClient.update_headers(client=client)
+        # print('\n~~~~~~~~~~~~~~~~~~\nAutopainter update headers ends\n~~~~~~~~~~~~~~~~~~~~~')
         async with aiohttp.TCPConnector(verify_ssl=False) as connector:
             async with aiohttp.ClientSession(
                 headers=NotPxClient.session_headers,
@@ -27,8 +28,8 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client
                 connector=connector,
                 timeout=aiohttp.ClientTimeout(300)
                 ) as aiohttp_session:
-                print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{session_name} | Autopainter aiohttp_session is: {aiohttp_session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
-    
+                # print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{session_name} | Autopainter aiohttp_session is: {aiohttp_session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
+                # print('\n¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥\naiohtttp session starts\n¥¥¥¥¥¥¥¥¥¥¥¥¥¥\n')
                 try:
                     await asyncio.sleep(random.randint(2, 4))
                     acc_data = await NotPxClient.accountStatus(aiohttp_session)
@@ -60,7 +61,15 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client
                 except urllib3.exceptions.NewConnectionError:
                     logger.error(f"Thread {thread} | {session_name} | **Painter:** NewConnectionError. Sleeping for 5s...")
                     await asyncio.sleep(5)
-        
+
+                except asyncio.TimeoutError:
+                    er = random.randint(60,120)
+                    logger.error(f"Thread {thread} | {session_name} | **Painter:** TimeOutError. Sleeping for {er}s...")
+                    await asyncio.sleep(er)
+
+
+# Как-то обрабатывать ошибку так, чтобы пересоздавало client.start
+
         d = random.randint(1800, 6000) 
         logger.info(f"Thread {thread} | {session_name} | **Painter:** No charge avaliable. Sleeping for {d} seconds...")
         await asyncio.sleep(d)
@@ -70,6 +79,7 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx, clien
     logger.info(f"Thread {thread} | {session_name} | **Miner:** Mine claiming started!") 
     while True:
         await NotPxClient.update_headers(client=client)
+        # print('\n¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨\nMainclaimer update headers ends\n¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨\n')
         async with aiohttp.TCPConnector(verify_ssl=False) as connector:
             async with aiohttp.ClientSession(
                 headers=NotPxClient.session_headers,
@@ -77,11 +87,13 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx, clien
                 connector=connector,
                 timeout=aiohttp.ClientTimeout(300)
                 ) as aiohttp_session:
+                
+                # print('\nøøøøøøøøøøøøøøøøøøøøø\naiohtttp session starts\nøøøøøøøøøøøøøøøøøøøøøø\n')
                 try:
                     await asyncio.sleep(random.randint(2, 4))
                     acc_data = await NotPxClient.accountStatus(aiohttp_session) #ошибка в этой функции
                 
-                    print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{session_name} | Mineclaimer aiohttp_session is: {aiohttp_session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
+                    # print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{session_name} | Mineclaimer aiohttp_session is: {aiohttp_session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
                     if not acc_data:
                         logger.error(f"Thread {thread} | {session_name} | **Miner:** No acc_data! ")
                         await asyncio.sleep(5)
@@ -105,13 +117,18 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx, clien
                     logger.error(f"Thread {thread} | {session_name} | **Painter:** NewConnectionError. Sleeping for 5s...")
                     await asyncio.sleep(5)
 
+                except asyncio.TimeoutError:
+                    er = random.randint(60,120)
+                    logger.error(f"Thread {thread} | {session_name} | **Painter:** TimeOutError. Sleeping for {er}s...")
+                    await asyncio.sleep(er)
 
         sleep_time = random.randint(3600,15000)
         logger.info(f"Thread {thread} | {session_name} | **Miner:** Sleeping for {sleep_time} seconds...")
         await asyncio.sleep(sleep_time)
 
 
-async def start(thread: int, session_name: str, phone_number: str, proxy: [str, None], web_app_query: str, client: TelegramClient):
+async def start(thread: int, session_name: str, phone_number: str, proxy: dict, web_app_query: str, client: TelegramClient):
+    await asyncio.sleep(random.randint(1,10))
     NotPxClient = NotPx(
         thread=thread,
         session_name=pathlib.Path(config.SESSIONS_PATH, session_name),

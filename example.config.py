@@ -10,10 +10,9 @@ DELAYS = {
 }
 
 PROXY = {
-    "USE_PROXY_FROM_FILE": False,  # True - if use proxy from file, False - if use proxy from accounts.json
-    "PROXY_PATH": "data/proxy.txt",  # path to file proxy
+    "USE_PROXY_FROM_DOTENV": False,  # True - if use proxy from file, False - if use proxy from accounts.json
     "TYPE": {
-        "TG": "socks5",  # proxy type for tg client. "socks4", "socks5" and "http" are supported
+        "TG": "http",  # proxy type for tg client. "socks4", "socks5" and "http" are supported
         "REQUESTS": "http"  # proxy type for requests. "http" for https and http proxys, "socks5" for socks5 proxy.
         }
 }
