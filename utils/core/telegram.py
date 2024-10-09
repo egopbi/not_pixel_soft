@@ -130,21 +130,21 @@ class Accounts:
             session_name = input('\nInput the name of the session (press Enter to exit): ')
             if not session_name: return
 
-            if config.PROXY['USE_PROXY_FROM_DOTENV']:
-                proxy_name = "PROXY_" + str(session_name)
-                try:
-                    proxy = os.getenv(proxy_name)
-                except:
-                    logger.error(f"Proxy with name {proxy_name} doesn't exist")
-                    proxy = input("Input the proxy in the format login:password@ip:port (press Enter to use without proxy): ")
+            # if config.PROXY['USE_PROXY_FROM_DOTENV']:
+            #     proxy_name = "PROXY_" + str(session_name)
+            #     try:
+            #         proxy = os.getenv(proxy_name)
+            #     except:
+            #         logger.error(f"Proxy with name {proxy_name} doesn't exist")
+            #         proxy = input("Input the proxy in the format login:password@ip:port (press Enter to use without proxy): ")
 
-            dict_proxy = parse_proxy(proxy)
+            # dict_proxy = parse_proxy(proxy)
 
             client = TelegramClient(
                 session=pathlib.Path(config.SESSIONS_PATH, session_name),
                 api_id=self.api_id,
                 api_hash=self.api_hash,
-                proxy=dict_proxy,
+                # proxy=dict_proxy,
             )
 
             async with client:

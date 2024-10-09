@@ -21,7 +21,7 @@ PROXY = {
 WORKDIR = "sessions/"
 
 # ADD YOUR OWN ABSOLUTE PATH!!!
-SESSIONS_PATH = '/Users/.../softs/not_pixel_my/sessions/'
+SESSIONS_PATH = '/Users/...//not_pixel_my/sessions/'
 
 # timeout in seconds for checking accounts on valid
 TIMEOUT = 30

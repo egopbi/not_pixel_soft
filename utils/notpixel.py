@@ -80,8 +80,11 @@ class NotPx:
                         else:
                             raise Exception(report_bug_text.format(text))
                     else:
-                        logger.error(f"Thread {self.thread} | {self.name} | ConnectionError {end_point}. Try to wait for 1 hour...")
-                        raise Exception(authenticate_error)
+                        attempt -= 1
+                        logger.error(f"Thread {self.thread} | {self.name} | ConnectionError {end_point}. Waiting for 10 minutes...")
+                        await asyncio.sleep(600)
+                        return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
+                        # raise Exception(authenticate_error)
                             
                             
                 else:
@@ -94,11 +97,16 @@ class NotPx:
                         else:
                             raise Exception(report_bug_text.format(text))
                     elif response.status >= 500:
+                        attempt -= 1
                         await asyncio.sleep(5)
-                        return await self.request(method,end_point,key_check,data)
+                        return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
                     else:
-                        raise Exception(authenticate_error)
-                
+                        attempt -= 1
+                        logger.error(f"Thread {self.thread} | {self.name} | ConnectionError {end_point}. Waiting for 10 minutes...")
+                        await asyncio.sleep(600)
+                        return await self.request(method, end_point, key_check, aiohttp_session, data, attempt=attempt)
+                        # raise Exception(authenticate_error)
+
             except aiohttp.ClientConnectionError:
                 logger.error(f"Thread {self.thread} | {self.account} | **Requester:** ConnectionError {end_point}. Sleeping for 5s...")
                 attempt -= 1
@@ -133,24 +141,33 @@ class NotPx:
 
     async def autoPaintPixel(self, aiohttp_session):
         # making pixel randomly
-        colors = [ "#FFFFFF" , "#000000" , "#00CC78" , "#BE0039" ]
+        colors = ["#FFFFFF", "#000000", "#00CC78", "#BE0039"]
         random_pixel = (random.randint(100,990) * 1000) + random.randint(100,990)
         data = {"pixelId":random_pixel,"newColor":random.choice(colors)}
 
         # Почему-то для разных сессий выдает одно значение 
         return (await self.request("post","/repaint/start","balance", aiohttp_session, data))['balance']
     
-    async def paintPixel(self,x,y,hex_color, aiohttp_session):
+    async def paintPixel(self, x, y, hex_color, aiohttp_session):
         pixelformated = (y * 1000) + x + 1
         data = {"pixelId":pixelformated,"newColor":hex_color}
 
         return (await self.request("post","/repaint/start","balance",aiohttp_session, data))['balance']
+    
+    async def paint_first_pixel(self, x, y, aiohttp_session):
+        colors = ["#FFFFFF", "#00CC78", "#BE0039"]
+        return await self.paintPixel(x=x, y=y, hex_color=random.choice(colors), aiohttp_session=aiohttp_session)
+    
+    async def repaint_first_pixel(self, x, y, aiohttp_session):
+        return await self.paintPixel(x=x, y=y, hex_color="#000000", aiohttp_session=aiohttp_session)
     
     async def update_headers(self, client):
         # print('\n±±±±±±±±±±±±±±±±±±\nupdate headers starts\n±±±±±±±±±±±±±±±±±±±±±±\n')
         new_web_app_query = await get_web_app_data(client)
         # print('\n§§§§§§§§§§§§§§§§§§\nget new web app query\n§§§§§§§§§§§§§§§§§§§§§')
         self.session_headers['Authorization'] = f'initData {new_web_app_query}'
+
+    
     
     # async def stats(self): # Недописано
     #     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
