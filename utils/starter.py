@@ -15,7 +15,7 @@ from utils.notpixel import NotPx
 
 
 async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client: TelegramClient):
-    await asyncio.sleep(random.randint(1,360))
+    await asyncio.sleep(random.randint(20,1850))
     logger.info(f"Thread {thread} | {session_name} | **Painter:** Auto painting started!")
     # print(f'@@@@@@@@@@@@@@@@@@@@@@@@@@@\n{NotPxClient}\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
     while True:
@@ -42,27 +42,30 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client
                         charges = acc_data['charges']
                     try:
                         if charges > 0:    
-                            # for _ in range(charges):
-                            #     balance = await NotPxClient.autoPaintPixel(aiohttp_session) #ошибка в этой функции
-                            #     logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel painted successfully! User new balance: {balance}")
-
-                            #     t = random.randint(1,6)
-                            #     logger.info(f"Thread {thread} | {session_name} | **Painter antidetect:** Sleeping for {t} seconds...")
-                            #     await asyncio.sleep(t)
-                            x = random.randint(746, 995)
-                            y = random.randint(593, 598)
-                            for i in range(charges):
-                                if i % 2 == 0:
-                                    balance = await NotPxClient.paint_first_pixel(x=x, y=y, aiohttp_session=aiohttp_session)
-                                else:
-                                    balance = await NotPxClient.repaint_first_pixel(x=x, y=y, aiohttp_session=aiohttp_session)
-                                    x = x + random.randint(-1, 1)
-                                    y = y + random.randint(-1, 1)
-                                
-                                logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel painted successfully! User new balance: {balance}")
-                                t = random.randint(1,6)
+                            for _ in range(charges):
+                                balance = await NotPxClient.autoPaintPixel(aiohttp_session) #ошибка в этой функции
+                                logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel painted successfully! \
+User new balance: {balance}")
+                                t = random.randint(1,4)
                                 logger.info(f"Thread {thread} | {session_name} | **Painter antidetect:** Sleeping for {t} seconds...")
                                 await asyncio.sleep(t)
+#                             x = random.randint(181, 244)
+#                             y = random.randint(170, 229)
+#                             for i in range(charges):
+#                                 if i % 2 == 0:
+#                                     balance = await NotPxClient.paint_first_pixel(x=x, y=y, aiohttp_session=aiohttp_session)
+#                                     logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel painted successfully on ({x,y})! \
+# User new balance: {balance}")
+#                                 else:
+#                                     balance = await NotPxClient.repaint_first_pixel(x=x, y=y, aiohttp_session=aiohttp_session)
+#                                     logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel repainted successfully on ({x,y})! \
+# User new balance: {balance}")
+#                                     x = x + random.randint(-1, 1)
+#                                     y = y + random.randint(-1, 1)
+                                
+#                                 t = random.randint(1,3)
+#                                 logger.info(f"Thread {thread} | {session_name} | **Painter antidetect:** Sleeping for {t} seconds...")
+#                                 await asyncio.sleep(t)
                     except:
                         logger.error(f"Thread {thread} | {session_name} | **Painter:** RequestError. Sleeping for 20s...")
                         await asyncio.sleep(20)
@@ -81,13 +84,13 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client
                     logger.error(f"Thread {thread} | {session_name} | **Painter:** TimeOutError. Sleeping for {er}s...")
                     await asyncio.sleep(er)
 
-        d = random.randint(1800, 6000) 
+        d = random.randint(2420, 6000) 
         logger.info(f"Thread {thread} | {session_name} | **Painter:** No charge avaliable. Sleeping for {d} seconds...")
         await asyncio.sleep(d)
 
 
 async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx, client: TelegramClient):
-    await asyncio.sleep(random.randint(1,540))
+    await asyncio.sleep(random.randint(600,1800))
     logger.info(f"Thread {thread} | {session_name} | **Miner:** Mine claiming started!") 
     while True:
         await NotPxClient.update_headers(client=client)
@@ -134,7 +137,7 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx, clien
                     logger.error(f"Thread {thread} | {session_name} | **Painter:** TimeOutError. Sleeping for {er}s...")
                     await asyncio.sleep(er)
 
-        sleep_time = random.randint(3600,15000)
+        sleep_time = random.randint(5000,17000)
         logger.info(f"Thread {thread} | {session_name} | **Miner:** Sleeping for {sleep_time} seconds...")
         await asyncio.sleep(sleep_time)
 
@@ -150,6 +153,11 @@ async def start(thread: int, session_name: str, phone_number: str, proxy: dict, 
         )
     # print(f'\n\n********************\n{thread}\n{session_name}\n{phone_number}\n{proxy}\n{NotPxClient.web_app_query}\n**********************')
     session_name = session_name + '.session'
+
+    # адрес темплаты
+    # NotPxClient.request(https://notpx.app/api/v1/image/template/subscribe/7526469389)
+
+
     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
     await asyncio.gather(
     autopainter(thread=thread, session_name=session_name, NotPxClient=NotPxClient, client=client),

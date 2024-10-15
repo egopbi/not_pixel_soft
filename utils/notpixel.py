@@ -11,6 +11,7 @@ from fake_useragent import UserAgent
 from dotenv import load_dotenv
 
 from utils.core import logger
+from utils.colors import Colors
 import config
 
 sys.path.append('/Users/egorpopov/softs/not_pixel_my/utils') 
@@ -42,13 +43,7 @@ class NotPx:
         self.thread = thread
         self.proxy = f"{config.PROXY['TYPE']['REQUESTS']}://{proxy}" if proxy is not None else None
         self.name = self.account.split("/")[-1]
-        
-        # self.client = TelegramClient(
-        #     session=session_name,
-        #     api_id=os.getenv("API_ID"),
-        #     api_hash=os.getenv("API_HASH"),
-        #     proxy=proxy,
-        # )
+        self.main_color = Colors.blue # Используется в перекраске
 
         self.web_app_query = web_app_query
         
@@ -141,25 +136,23 @@ class NotPx:
 
     async def autoPaintPixel(self, aiohttp_session):
         # making pixel randomly
-        colors = ["#FFFFFF", "#000000", "#00CC78", "#BE0039"]
-        random_pixel = (random.randint(100,990) * 1000) + random.randint(100,990)
-        data = {"pixelId":random_pixel,"newColor":random.choice(colors)}
-
-        # Почему-то для разных сессий выдает одно значение 
+        x = random.randint(181, 244)
+        y = random.randint(170, 229)
+        pixel = (y * 1000) + x
+        data = {"pixelId":pixel,"newColor":Colors.black}
         return (await self.request("post","/repaint/start","balance", aiohttp_session, data))['balance']
     
     async def paintPixel(self, x, y, hex_color, aiohttp_session):
         pixelformated = (y * 1000) + x + 1
         data = {"pixelId":pixelformated,"newColor":hex_color}
-
         return (await self.request("post","/repaint/start","balance",aiohttp_session, data))['balance']
     
     async def paint_first_pixel(self, x, y, aiohttp_session):
-        colors = ["#FFFFFF", "#00CC78", "#BE0039"]
-        return await self.paintPixel(x=x, y=y, hex_color=random.choice(colors), aiohttp_session=aiohttp_session)
+        all_colors = [value for key, value in Colors.__dict__.items() if not key.startswith('__') and value != self.main_color]
+        return await self.paintPixel(x=x, y=y, hex_color=random.choice(all_colors), aiohttp_session=aiohttp_session)
     
     async def repaint_first_pixel(self, x, y, aiohttp_session):
-        return await self.paintPixel(x=x, y=y, hex_color="#000000", aiohttp_session=aiohttp_session)
+        return await self.paintPixel(x=x, y=y, hex_color=self.main_color, aiohttp_session=aiohttp_session)
     
     async def update_headers(self, client):
         # print('\n±±±±±±±±±±±±±±±±±±\nupdate headers starts\n±±±±±±±±±±±±±±±±±±±±±±\n')
