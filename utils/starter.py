@@ -17,10 +17,8 @@ from utils.notpixel import NotPx
 async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client: TelegramClient):
     await asyncio.sleep(random.randint(20,1850))
     logger.info(f"Thread {thread} | {session_name} | **Painter:** Auto painting started!")
-    # print(f'@@@@@@@@@@@@@@@@@@@@@@@@@@@\n{NotPxClient}\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
     while True:
         await NotPxClient.update_headers(client=client)
-        # print('\n~~~~~~~~~~~~~~~~~~\nAutopainter update headers ends\n~~~~~~~~~~~~~~~~~~~~~')
         async with aiohttp.TCPConnector(verify_ssl=False) as connector:
             async with aiohttp.ClientSession(
                 headers=NotPxClient.session_headers,
@@ -28,8 +26,6 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client
                 connector=connector,
                 timeout=aiohttp.ClientTimeout(300)
                 ) as aiohttp_session:
-                # print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{session_name} | Autopainter aiohttp_session is: {aiohttp_session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
-                # print('\n¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥\naiohtttp session starts\n¥¥¥¥¥¥¥¥¥¥¥¥¥¥\n')
                 try:
                     await asyncio.sleep(random.randint(2, 4))
                     acc_data = await NotPxClient.accountStatus(aiohttp_session)
@@ -43,7 +39,7 @@ async def autopainter(thread: int, session_name: str, NotPxClient: NotPx, client
                     try:
                         if charges > 0:    
                             for _ in range(charges):
-                                balance = await NotPxClient.autoPaintPixel(aiohttp_session) #ошибка в этой функции
+                                balance = await NotPxClient.autoPaintPixel(aiohttp_session)
                                 logger.success(f"Thread {thread} | {session_name} | **Painter:** 1 Pixel painted successfully! \
 User new balance: {balance}")
                                 t = random.randint(1,4)
@@ -94,7 +90,6 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx, clien
     logger.info(f"Thread {thread} | {session_name} | **Miner:** Mine claiming started!") 
     while True:
         await NotPxClient.update_headers(client=client)
-        # print('\n¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨\nMainclaimer update headers ends\n¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨\n')
         async with aiohttp.TCPConnector(verify_ssl=False) as connector:
             async with aiohttp.ClientSession(
                 headers=NotPxClient.session_headers,
@@ -103,12 +98,10 @@ async def mine_claimer(thread: int, session_name: str, NotPxClient: NotPx, clien
                 timeout=aiohttp.ClientTimeout(300)
                 ) as aiohttp_session:
                 
-                # print('\nøøøøøøøøøøøøøøøøøøøøø\naiohtttp session starts\nøøøøøøøøøøøøøøøøøøøøøø\n')
                 try:
                     await asyncio.sleep(random.randint(2, 4))
-                    acc_data = await NotPxClient.accountStatus(aiohttp_session) #ошибка в этой функции
+                    acc_data = await NotPxClient.accountStatus(aiohttp_session)
                 
-                    # print(f'%%%%%%%%%%%%%%%%%%%%%%%%%\n\n{session_name} | Mineclaimer aiohttp_session is: {aiohttp_session}\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%') # Разные в разных сессиях
                     if not acc_data:
                         logger.error(f"Thread {thread} | {session_name} | **Miner:** account_data was not recieved")
                         await asyncio.sleep(5)
@@ -151,13 +144,27 @@ async def start(thread: int, session_name: str, phone_number: str, proxy: dict, 
         proxy=proxy,
         web_app_query=web_app_query,
         )
-    # print(f'\n\n********************\n{thread}\n{session_name}\n{phone_number}\n{proxy}\n{NotPxClient.web_app_query}\n**********************')
     session_name = session_name + '.session'
 
-    # адрес темплаты
-    # NotPxClient.request(https://notpx.app/api/v1/image/template/subscribe/7526469389)
+# Used when need to change the template
+    """ 
+    async with aiohttp.TCPConnector(verify_ssl=False) as connector:
+            async with aiohttp.ClientSession(
+                headers=NotPxClient.session_headers,
+                trust_env=True,
+                connector=connector,
+                timeout=aiohttp.ClientTimeout(300)
+                ) as aiohttp_session:
+    
+                try:
+                    await NotPxClient.subscribe_template(
+                        aiohttp_session=aiohttp_session, 
+                        template_address="/image/template/subscribe/2087443613"
+                        )
+                except:
+                    logger.error("Can't subscribe to template")
 
-
+"""
     await asyncio.sleep(random.uniform(*config.DELAYS['ACCOUNT']))
     await asyncio.gather(
     autopainter(thread=thread, session_name=session_name, NotPxClient=NotPxClient, client=client),
@@ -166,7 +173,7 @@ async def start(thread: int, session_name: str, phone_number: str, proxy: dict, 
 
 
            
-# ФУнкция не готова, не трогал изменения с webappquery
+# Not working yet, start change with webappquery
 """
 async def stats():
     accounts = await Accounts().get_accounts()
